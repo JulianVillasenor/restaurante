@@ -1,0 +1,225 @@
+
+
+
+
+INSERT INTO proveedor (RFC, nombre, direccion, telefono) VALUES
+('MFA840312BD6', 'Molino la Fama', 'Av. de los Molinos 123, Ciudad Molino, Sonora', '6621234567'),
+('CME910715UB9', 'Costco', 'Blvd. Navarrete 789, Hermosillo, Sonora', '6627654321'),
+('GSV0511044JA', 'GRUPO SVENSKA', 'Calle Industria 456, Parque Industrial, Monterrey', '8181234567'),
+('APC170529SK1', 'Arte y Pasión Culinaria', 'Av. del Sabor 321, Guadalajara, Jalisco', '3334567890'),
+('MZA810422IB2', 'Mercado Zazueta', 'Calle Mercado 100, Culiacán, Sinaloa', '6679876543'),
+('DIP950608IP7', 'DIPACU', 'Prolongación Reforma 654, CDMX', '5554321876');
+
+
+INSERT INTO inventario (num_id, nombre, proveedor, precio, costo, stock) VALUES
+-- Molino la Fama
+(7501234567890, 'Saco de Harina 22kg', 'MFA840312BD6', 320.00, 280.00, 25),
+
+-- Costco
+(7501234567891, 'Queso Mozzarella 2kg', 'CME910715UB9', 180.00, 150.00, 40),
+(7501234567892, 'Pepperoni 1kg', 'CME910715UB9', 210.00, 180.00, 30),
+(7501234567893, 'Salami 1kg', 'CME910715UB9', 200.00, 170.00, 20),
+(7501234567894, 'Café Espresso 1kg', 'CME910715UB9', 250.00, 210.00, 15),
+
+-- Mercado Zazueta
+(7501234567895, 'Orégano Seco 500g', 'MZA810422IB2', 90.00, 70.00, 18),
+(7501234567896, 'Papel Cuadriculado (resmas)', 'MZA810422IB2', 55.00, 45.00, 12),
+
+-- Grupo Svenska
+(7501234567897, 'Cajas de Pizza 40x40cm (100 unidades)', 'GSV0511044JA', 850.00, 700.00, 35),
+
+-- Dipacu
+(7501234567898, 'Cajas para Hamburguesa (100 unidades)', 'DIP950608IP7', 500.00, 420.00, 22),
+
+-- Arte y Pasión Culinaria
+(7501234567899, 'Salsa de Tomate para Pizza 3kg', 'APC170529SK1', 150.00, 120.00, 28);
+
+
+
+
+
+-- 1.  Actualizar la tabla `ventas` para agregar la columna `folio_factura`
+ALTER TABLE ventas ADD COLUMN folio_factura INT;
+
+-- 2.  Agregar una restricción UNIQUE a la columna `folio_factura` (opcional, dependiendo de si cada liquidación debe tener un folio único)
+-- Si cada liquidación de mesa debe tener un folio único, usa esto:
+ALTER TABLE ventas ADD CONSTRAINT fk_folio_factura UNIQUE (folio_factura);
+
+-- Si múltiples ventas pueden compartir el mismo folio (como es el caso al liquidar una mesa), NO ejecutes el comando de arriba.
+
+-- 3.  Eliminar la tabla `factura`
+DROP TABLE factura;
+
+-- Recapitulacion de las tablas finales
+
+
+CREATE TABLE mesas (
+    id INT PRIMARY KEY,
+    sillas INT NOT NULL,
+    estado INT NOT NULL CHECK (estado IN (0, 1, 2)),
+    pos_x INT NOT NULL,
+    pos_y INT NOT NULL,
+    ancho INT NOT NULL,
+    alto INT NOT NULL,
+    forma VARCHAR(20) NOT NULL
+);
+
+CREATE TABLE inventario (
+    num_id VARCHAR(13) PRIMARY KEY, 
+    nombre VARCHAR(100) NOT NULL,
+    proveedor VARCHAR(13) NOT NULL REFERENCES proveedor(RFC),
+    precio REAL NOT NULL,
+    costo REAL NOT NULL,
+    stock INT NOT NULL
+);
+
+CREATE TABLE proveedor (
+    RFC VARCHAR(13) PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    direccion VARCHAR(255),
+    telefono VARCHAR(15)
+);
+ALTER TABLE proveedor
+ADD CONSTRAINT unique_rfc UNIQUE (RFC);
+
+CREATE TABLE folio (
+    id SERIAL PRIMARY KEY,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ventas (
+    id SERIAL PRIMARY KEY,
+    id_mesa INT REFERENCES mesas(id),
+    num_id_producto VARCHAR REFERENCES inventario(num_id),
+    valor_articulo FLOAT,
+    cantidad INT,
+    subtotal FLOAT,
+    id_folio INT REFERENCES folio(id) -- Clave foránea a la tabla folio
+);
+
+
+# integracion de la nueva tabla:
+CREATE TABLE cuenta (
+    id SERIAL PRIMARY KEY,
+    id_mesa INT NOT NULL REFERENCES mesas(id),
+    num_id_producto VARCHAR(13) NOT NULL REFERENCES inventario(num_id),
+    valor_articulo FLOAT NOT NULL,
+    cantidad INT NOT NULL,
+    subtotal FLOAT NOT NULL,
+    id_folio INT,
+    observaciones TEXT
+);
+
+DROP TABLE IF EXISTS cuenta CASCADE;
+DROP TABLE IF EXISTS ventas CASCADE;
+DROP TABLE IF EXISTS inventario_cocina CASCADE;
+DROP TABLE IF EXISTS receta CASCADE;
+DROP TABLE IF EXISTS producto CASCADE;
+DROP TABLE IF EXISTS inventario CASCADE;
+DROP TABLE IF EXISTS proveedor CASCADE;
+DROP TABLE IF EXISTS mesa CASCADE;
+
+-- Tabla: proveedor
+CREATE TABLE proveedor (
+    rfc VARCHAR(20) PRIMARY KEY,
+    nombre VARCHAR(100),
+    direccion VARCHAR(255),
+    telefono VARCHAR(20)
+);
+
+-- Tabla: inventario
+CREATE TABLE inventario (
+    num_id_producto SERIAL PRIMARY KEY,
+    nombre VARCHAR(100),
+    costo FLOAT,
+    stock INT,
+    precio FLOAT,
+    rfc_proveedor VARCHAR(20),
+    FOREIGN KEY (rfc_proveedor) REFERENCES proveedor(rfc)
+);
+
+-- Tabla: receta
+CREATE TABLE receta (
+    id SERIAL PRIMARY KEY,
+    id_rec INT,
+    num_id_producto INT,
+    medida CHAR(10),
+    cantidad INT,
+    FOREIGN KEY (num_id_producto) REFERENCES inventario(num_id_producto)
+);
+
+-- Tabla: producto
+CREATE TABLE producto (
+    id_pro SERIAL PRIMARY KEY,
+    nombre VARCHAR(100),
+    id_rec INT,
+    disponible BOOLEAN,
+    FOREIGN KEY (id_rec) REFERENCES receta(id)
+);
+ALTER TABLE producto
+ADD COLUMN precio NUMERIC(10, 2);
+
+
+-- Tabla: inventario_cocina
+CREATE TABLE inventario_cocina (
+    id_cocina SERIAL,
+    num_id_producto INT,
+    cantidad INT,
+    PRIMARY KEY (id_cocina, num_id_producto),
+    FOREIGN KEY (num_id_producto) REFERENCES inventario(num_id_producto)
+);
+
+-- Tabla: mesa
+CREATE TABLE mesa (
+    id_mesa SERIAL PRIMARY KEY,
+    sillas INT,
+    estado INT,
+    pos_x INT,
+    pos_y INT,
+    ancho INT,
+    alto INT,
+    forma VARCHAR(50)
+);
+
+-- Tabla: cuenta
+CREATE TABLE cuenta (
+    id SERIAL PRIMARY KEY,
+    id_mesa INT,
+    id_pro INT,
+    valor_articulo FLOAT,
+    cantidad INT,
+    sub_total FLOAT,
+    FOREIGN KEY (id_mesa) REFERENCES mesa(id_mesa),
+    FOREIGN KEY (id_pro) REFERENCES producto(id_pro)
+);
+ALTER TABLE cuenta
+ADD COLUMN observaciones VARCHAR(45);
+ALTER TABLE cuenta
+ADD COLUMN id_folio INT;
+ALTER TABLE cuenta
+ADD CONSTRAINT fk_cuenta_folio
+FOREIGN KEY (id_folio)
+REFERENCES folio(id);
+
+
+-- Tabla: ventas
+CREATE TABLE ventas (
+    id SERIAL PRIMARY KEY,
+    id_mesa INT,
+    num_id_producto INT,
+    valor_articulo FLOAT,
+    cantidad INT,
+    sub_total FLOAT,
+    FOREIGN KEY (id_mesa) REFERENCES mesa(id_mesa),
+    FOREIGN KEY (num_id_producto) REFERENCES inventario(num_id_producto)
+);
+-- Paso 1: Agregar la columna id_folio
+ALTER TABLE ventas
+ADD COLUMN id_folio INT;
+
+-- Paso 2: Crear la llave foránea hacia folio(id)
+ALTER TABLE ventas
+ADD CONSTRAINT fk_id_folio
+FOREIGN KEY (id_folio)
+REFERENCES folio(id);
+
