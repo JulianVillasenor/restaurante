@@ -5,7 +5,7 @@ class Database:
         print("Iniciando conexión a la base de datos...")  # Mensaje inicial
         try:
             self.connection = psycopg2.connect(
-                dbname="app_ventas2.0",
+                dbname="app_ventas3.0",
                 user="postgres",
                 password="", #Poner la contraseña e informacion correcta de la base de datos para poder hace la conexion
                 host="localhost",

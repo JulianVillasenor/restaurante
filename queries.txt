@@ -87,17 +87,14 @@ CREATE TABLE folio (
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+//////////////tabla nueva/////////////////////
 CREATE TABLE ventas (
     id SERIAL PRIMARY KEY,
-    id_mesa INT REFERENCES mesas(id),
-    num_id_producto VARCHAR REFERENCES inventario(num_id),
-    valor_articulo FLOAT,
-    cantidad INT,
-    subtotal FLOAT,
-    id_folio INT REFERENCES folio(id) -- Clave foránea a la tabla folio
+    float subtotal,
+    float total
 );
 
-
+//////////////////////////////////////////////////
 # integracion de la nueva tabla:
 CREATE TABLE cuenta (
     id SERIAL PRIMARY KEY,
@@ -107,8 +104,12 @@ CREATE TABLE cuenta (
     cantidad INT NOT NULL,
     subtotal FLOAT NOT NULL,
     id_folio INT,
-    observaciones TEXT
+    observaciones TEXT,
+    bool estado
 );
+// pendiente agregar estado a la cuenta: {cerrada / abierta }
+// eliminar la tabla de venta y crear una que maneje el total de la venta y el id de la cuenta a la que se refiere:
+[id_venta, id_cuenta, total, mesero??]
 
 DROP TABLE IF EXISTS cuenta CASCADE;
 DROP TABLE IF EXISTS ventas CASCADE;
